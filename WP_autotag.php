@@ -4,14 +4,14 @@ ini_set('display_errors',1);
 *
 *
 * Plugin Name: wp_autoTAG
-* Plugin URI: http://barranquismo.com.es
+* Plugin URI: http://pruebawpplugins.esy.es/
 * Description: A plugin to detect an add new TAGS depending on the post content
 * Version: 1.0
 * Author: Miquel Correa
 * Author URI: http://barranquismo.com.es
-* License: GPL2
+* License: MIT
 **/
-/*  Copyright 2015 Miquel Correa  (email : correa.miquel@gmail.com)
+/*  Copyright (c) 2015 8mikelx8
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,8 @@ ini_set('display_errors',1);
   copies of the Software, and to permit persons to whom the Software is
   furnished to do so, subject to the following conditions:
 
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -44,22 +44,85 @@ function wp_autoTAG_options() {
     {
         wp_die( __('PequeÃ±o padawan... debes utilizar la fuerza para entrar aquí­.') );
     }
-    if(isset($_POST['language'])){
-      $idioma = $_POST['language'];
-      add_option('language1', $idioma);
-      update_option('language1', $idioma);
-      if($idioma === 'Español'){
-        $idiomax = 'English';
+    function saveoptions(){
+      //language
+      if(isset($_POST['language'])){
+        $idioma = $_POST['language'];
+        add_option('language1', $idioma);
+        update_option('language1', $idioma);
+        if($idioma === 'Español'){
+          $idiomax = 'English';
+        }
+        else{
+          $idiomax = 'Español';
+        }
+        add_option('language2', $idiomax);
+        update_option('language2', $idiomax);
+      }
+      //API token
+      $optionapi = get_option('apitoken','0');
+      $valuetoken = $_POST['apitoken'];
+      if(isset($_POST['apitoken'])){
+        if(!($optionapi === $valuetoken)){
+          add_option('apitoken', $valuetoken);
+          update_option('apitoken', $valuetoken);
+        }
+      }
+      //Keywords
+      if(isset($_POST['keywords'])){
+        add_option('keywords', true);
+        update_option('keywords', true);
       }
       else{
-        $idiomax = 'Español';
+        add_option('keywords', false);
+        update_option('keywords', false);
       }
-      add_option('language2', $idiomax);
-      update_option('language2', $idiomax);
+      if(isset($_POST['relevancia'])){
+        $limit = $_POST['relevancia'];
+        add_option('relevance', $limit);
+        update_option('relevance', $limit);
+      }
+      //Entities
+      if(isset($_POST['personas'])){
+        add_option('people', true);
+        update_option('people', true);
+      }
+      else{
+        add_option('people', false);
+        update_option('people', false);
+      }
+      if(isset($_POST['lugares'])){
+        add_option('places', true);
+        update_option('places', true);
+      }
+      else{
+        add_option('places', false);
+        update_option('places', false);
+      }
+      if(isset($_POST['organizaciones'])){
+        add_option('organization', true);
+        update_option('organization', true);
+      }
+      else{
+        add_option('organization', false);
+        update_option('organization', false);
+      }
+      if(isset($_POST['otros'])){
+        add_option('other', true);
+        update_option('other', true);
+      }
+      else{
+        add_option('other', false);
+        update_option('other', false);
+      }
     }
 
-    if(isset($_POST['gentags'])) {
+    if(isset($_POST['savechanges'])) {
+      saveoptions();
+    }//end savechanges
 
+    if(isset($_POST['gentags'])) {
+        saveoptions();
         $limite = $_POST['relevancia'];
         $valuetoken = $_POST['apitoken'];
         $optionapi = get_option('apitoken','0');
@@ -248,6 +311,7 @@ function wp_autoTAG_options() {
       $otr = "OTROS";
       $resumen = "<p style='text-align:justify'>WP_autotag analiza el contenido de tus Post y genera TAGS acordes a éste. En las opciones puede decidir si quiere incorporar las palabras clave del texto como tags, así como la relevancia mínima a partir de la cual se incorporan. También puede decidir qué clase de entidades (personas, lugares, etc.) quiere incorporar a los tags. El plugin depende de un servicio externo por lo que es necesario adquirir una clave (gratuita) para usarlo. Esto puede limitar también el número de post que el plugin puede actualizar cada vez. El plugin solo creará tags para los post que no tengan ninguno todavía.</p>";
       $generate = "Generar TAGS";
+      $savechang = "Guardar preferencias";
     }
     else{
       $claveapi = 'API Key';
@@ -261,7 +325,14 @@ function wp_autoTAG_options() {
       $otr = "OTHER";
       $resumen = "<p style='text-align:justify'>WP_autotag analyze the content of your Posts and generate TAGS in base to this analysis. In the options you can choose if you want keywords as tags, as well as the minimal relevance of the keywords to be chosen as a tag. You can also choose which kind of entities (person, location, etc.) do you want as tags. this plugin depends on an external service and you have to aquire a key (free) to use it. It also affect the number of posts that can be analyzed each time. From here you can only analyze posts that doesn't have any tag already.</p>";
       $generate = "Generate TAGS";
+      $savechang = "Save settings";
     }
+    $keywordsopt = get_option('keywords', 'true');
+    $relevanceopt = get_option('relevance', '0.5');
+    $peopleopt = get_option('people', 'true');
+    $placesopt = get_option('places', 'true');
+    $otheropt = get_option('other', 'true');
+    $organizationsopt = get_option('organization', 'true');
     ?>
     <select name="language">
       <option><?php echo $idioma1;?></option>
@@ -280,9 +351,9 @@ function wp_autoTAG_options() {
     </fieldset>
       <fieldset style="border:solid black 1px; padding: 15px;">
         <p style="margin:0 1em 0 2em;">
-          <h3><span style="margin-right:1em;"><?php echo $tagskeyword;?></span> <input type="checkbox" name="keywords"/></h3>
+          <h3><span style="margin-right:1em;"><?php echo $tagskeyword;?></span> <input type="checkbox" name="keywords" <?php if($keywordsopt){echo "checked=true"; } ?> /></h3>
             <?php _e($minimrel); ?>
-            <input type="number" name="relevancia" min="0.1" max="1" step="0.1" value="0.5"/>
+            <input type="number" name="relevancia" min="0.1" max="1" step="0.1" value="<?php echo $relevanceopt ?>"/>
         </p>
       </fieldset>
       <fieldset style="border:solid black 1px; padding: 15px;">
@@ -290,27 +361,30 @@ function wp_autoTAG_options() {
           <h3> <?php echo $tagsentity;?></h3>
           <ul style="width:100%; list-style:none; margin:0; padding:0; float:left; text-align: left;">
             <li style="float:left; width:25%; margin:0; paddind:0; list-style: none;">
-              <input type="checkbox" name="personas"/>
+              <input type="checkbox" name="personas" <?php if($peopleopt){echo "checked=true"; } ?>/>
               <?php _e($pers); ?>
             </li>
             <li style="float:left; width:25%; margin:0; paddind:0; list-style: none;">
-              <input type="checkbox" name="lugares"/>
+              <input type="checkbox" name="lugares" <?php if($placesopt){echo "checked=true"; } ?>/>
               <?php _e($lug); ?>
             </li>
             <li style="float:left; width:25%; margin:0; paddind:0; list-style: none;">
-              <input type="checkbox" name="organizaciones"/>
+              <input type="checkbox" name="organizaciones" <?php if($organizationsopt){echo "checked=true"; } ?>/>
               <?php _e($org); ?>
             </li>
             <li style="float:left; width:25%; margin:0; paddind:0; list-style: none;<?php if($otr == "OTHER"){
               echo "display:none";
-            } ?>">
-              <input type="checkbox" name="otros"/>
+            }
+            ?>">
+              <input type="checkbox" name="otros" <?php if($otheropt){echo "checked=true"; } ?>/>
               <?php _e($otr); ?>
             </li>
         </ul>
         </p>
       </fieldset>
       <p class="submit">
+          <input type="submit" name="savechanges" class="button-primary" style="margin: 0 2em 0 0;" value="<?php echo $savechang; ?>" />
+
           <input type="submit" name="gentags" class="button-primary" value="<?php echo $generate; ?>" />
       </p>
     </form>
@@ -318,7 +392,7 @@ function wp_autoTAG_options() {
 
 <?php
 }
-//STARTS EXTERNAL PLUGIN********************************************************************************
+//STARTS CODE FOR BULK ACTIONS**************************************************************************
 //******************************************************************************************************
 //******************************************************************************************************
 //******************************************************************************************************
@@ -397,9 +471,18 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
 
 						$tags_added = 0;
 						foreach( $post_ids as $post_id ) {
-              // CODI FUNCIÓ? PROBEM
-              $valuetoken = get_option('apitoken', 'notoken');
+              // ANALYSIS CODE
+
               if($valuetoken != 'notoken'){
+
+                $valuetoken = get_option('apitoken', 'notoken');
+                $keywordsopt = get_option('keywords', 'true');
+                $relevanceopt = get_option('relevance', '0.5');
+                $peopleopt = get_option('people', 'true');
+                $placesopt = get_option('places', 'true');
+                $otheropt = get_option('other', 'true');
+                $organizationsopt = get_option('organization', 'true');
+
                 $idioma1 = get_option('language1','English');
                 $content_post = get_post($post_id);
                 $content = strip_tags($content_post->post_content);
@@ -421,95 +504,99 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
                   $other = "OTROS";
                 };
                 //ENTITIES ANALYSIS
+                if($peopleopt || $organizationsopt || $otheropt || $placesopt){
+                  $url = $engine;
+          				$data = array('text_list' => array($content));
+          				$options = array(
+          				    'http' => array(
+          				        'header'  => "Content-type: application/json\r\n".
+          				            "Authorization:token $valuetoken\r\n",
+          				        'method'  => 'POST',
+          				        'content' => json_encode($data),
+          				    ),
+          				);
+          				$context  = stream_context_create($options);
+          				$result = file_get_contents($url, false, $context);
 
-                $url = $engine;
-        				$data = array('text_list' => array($content));
-        				$options = array(
-        				    'http' => array(
-        				        'header'  => "Content-type: application/json\r\n".
-        				            "Authorization:token $valuetoken\r\n",
-        				        'method'  => 'POST',
-        				        'content' => json_encode($data),
-        				    ),
-        				);
-        				$context  = stream_context_create($options);
-        				$result = file_get_contents($url, false, $context);
+          				//var_dump($result);
 
-        				//var_dump($result);
-
-        				$jsonIterator = new RecursiveIteratorIterator(
-        				    new RecursiveArrayIterator(json_decode($result, TRUE)),
-        				    RecursiveIteratorIterator::SELF_FIRST);
-                $push = false;
-        				foreach ($jsonIterator as $key => $val) {
-        				    if(is_array($val)) {
-        				    }
-                    else {
-                      if($key === 'tag' && $val === $person){
-                        $push = true;
-                      }
-
-                      if($key === 'tag' && $val === $location){
-                        $push = true;
-                      }
-
-                      if($key === 'tag' && $val === $organization){
-                        $push = true;
-                      }
-
-                      if($key === 'tag' && $val === $other){
-                        $push = true;
-                      }
-
-        			        if($key === 'entity' && $push == true){
-        			          $entity = $val;
-        			          array_push($arraytags, $entity);
-                        $push = false;
-        			        }
-        				    }
-        				}
-
+          				$jsonIterator = new RecursiveIteratorIterator(
+          				    new RecursiveArrayIterator(json_decode($result, TRUE)),
+          				    RecursiveIteratorIterator::SELF_FIRST);
+                  $push = false;
+          				foreach ($jsonIterator as $key => $val) {
+          				    if(is_array($val)) {
+          				    }
+                      else {
+                        if($peopleopt){
+                          if($key === 'tag' && $val === $person){
+                            $push = true;
+                          }
+                        }
+                        if($placesopt){
+                          if($key === 'tag' && $val === $location){
+                            $push = true;
+                          }
+                        }
+                        if($organizationsopt){
+                          if($key === 'tag' && $val === $organization){
+                            $push = true;
+                          }
+                        }
+                        if($otheropt){
+                          if($key === 'tag' && $val === $other){
+                            $push = true;
+                          }
+                        }
+          			        if($key === 'entity' && $push == true){
+          			          $entity = $val;
+          			          array_push($arraytags, $entity);
+                          $push = false;
+          			        }
+          				    }
+          				}
+                }
         				// RELEVANT KEYWORDS ANALYSIS
+                if($keywordsopt){
+                  $limite = $relevanceopt;
+          				$url = $keywords;
+          				$data = array('text_list' => array($content));
+          				$options = array(
+          				    'http' => array(
+          				        'header'  => "Content-type: application/json\r\n".
+          				            "Authorization:token $valuetoken\r\n",
+          				        'method'  => 'POST',
+          				        'content' => json_encode($data),
+          				    ),
+          				);
+          				$context  = stream_context_create($options);
+          				$result2 = file_get_contents($url, false, $context);
+          				$jsonIterator = new RecursiveIteratorIterator(
+          				    new RecursiveArrayIterator(json_decode($result2, TRUE)),
+          				    RecursiveIteratorIterator::SELF_FIRST);
 
-                $limite = '0.5';
-        				$url = $keywords;
-        				$data = array('text_list' => array($content));
-        				$options = array(
-        				    'http' => array(
-        				        'header'  => "Content-type: application/json\r\n".
-        				            "Authorization:token $valuetoken\r\n",
-        				        'method'  => 'POST',
-        				        'content' => json_encode($data),
-        				    ),
-        				);
-        				$context  = stream_context_create($options);
-        				$result2 = file_get_contents($url, false, $context);
-        				$jsonIterator = new RecursiveIteratorIterator(
-        				    new RecursiveArrayIterator(json_decode($result2, TRUE)),
-        				    RecursiveIteratorIterator::SELF_FIRST);
-
-        				foreach ($jsonIterator as $key => $val) {
-        				    if(is_array($val)) {
-        				    }
-        				    else {
-        				        //CHECK RELEVANCE
-        				        if($key ==='relevance'){
-        				          if(floatval($val) > floatval($limite)){
-        				            $push = true;
-        				          }
-        				          else{
-        				            $push = false;
-        				          }
-        				        }
-        				        //ADD KEYWORDS TO ARRAY
-        				        if($key ==='keyword'){
-        				          if($push == true){
-        				            array_push($arraytags, $val);
-        				          }
-        				        }
-        				    }
-        				}
-
+          				foreach ($jsonIterator as $key => $val) {
+          				    if(is_array($val)) {
+          				    }
+          				    else {
+          				        //CHECK RELEVANCE
+          				        if($key ==='relevance'){
+          				          if(floatval($val) > floatval($limite)){
+          				            $push = true;
+          				          }
+          				          else{
+          				            $push = false;
+          				          }
+          				        }
+          				        //ADD KEYWORDS TO ARRAY
+          				        if($key ==='keyword'){
+          				          if($push == true){
+          				            array_push($arraytags, $val);
+          				          }
+          				        }
+          				    }
+          				}
+                }
                 wp_set_post_tags( $post_id, $arraytags);
 
               };
