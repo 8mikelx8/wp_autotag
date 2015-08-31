@@ -40,6 +40,22 @@ function wp_autoTAG() {
 	add_management_page( 'Opciones WP autoTAG', 'Wp autoTAG', 'manage_options', 'wp_autoTAG', 'wp_autoTAG_options' );
 }
 
+function wp_autoTAG_remoteApiCall($content, $url, $valueToken) {
+	$data = array('text_list' => array($content));
+
+	$options = array(
+		'http' => array(
+			'header'  => "Content-type: application/json\r\nAuthorization:token $valueToken\r\n",
+			'method'  => 'POST',
+			'content' => json_encode($data),
+		)
+	);
+
+	$context  = stream_context_create($options);
+
+	return file_get_contents($url, false, $context);
+}
+
 function wp_autoTAG_options() {
 	if (!current_user_can('manage_options')) {
 		wp_die( __('PequeÃ±o padawan... debes utilizar la fuerza para entrar aquí­.') );
@@ -194,17 +210,8 @@ function wp_autoTAG_options() {
 					isset($_POST['organizaciones']) || isset($_POST['otros'])
 				) {
 					$url = $engine;
-					$data = array('text_list' => array($content));
-					$options = array(
-						'http' => array(
-							'header'  => "Content-type: application/json\r\n".
-								"Authorization:token $valuetoken\r\n",
-							'method'  => 'POST',
-							'content' => json_encode($data),
-						)
-					);
-					$context  = stream_context_create($options);
-					$result = file_get_contents($url, false, $context);
+
+					$result = wp_autoTAG_remoteApiCall($content, $url, $valuetoken);
 
 					$jsonIterator = new RecursiveIteratorIterator(
 						new RecursiveArrayIterator(json_decode($result, TRUE)),
@@ -256,17 +263,7 @@ function wp_autoTAG_options() {
 					// ANALISIS DE KEYWORDS CON RELEVANCIA
 					$limite = $_POST['relevancia'];
 					$url = $keywords;
-					$data = array('text_list' => array($content));
-					$options = array(
-						'http' => array(
-							'header'  => "Content-type: application/json\r\n".
-								"Authorization:token $valuetoken\r\n",
-							'method'  => 'POST',
-							'content' => json_encode($data),
-						)
-					);
-					$context  = stream_context_create($options);
-					$result2 = file_get_contents($url, false, $context);
+					$result2 = wp_autoTAG_remoteApiCall($content, $url, $valuetoken);
 
 					$jsonIterator = new RecursiveIteratorIterator(
 						new RecursiveArrayIterator(json_decode($result2, TRUE)),
@@ -524,18 +521,7 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
 								//ENTITIES ANALYSIS
 								if($peopleopt || $organizationsopt || $otheropt || $placesopt) {
 									$url = $engine;
-									$data = array('text_list' => array($content));
-									$options = array(
-										'http' => array(
-											'header'  => "Content-type: application/json\r\n".
-											"Authorization:token $valuetoken\r\n",
-											'method'  => 'POST',
-											'content' => json_encode($data),
-										)
-									);
-
-									$context  = stream_context_create($options);
-									$result = file_get_contents($url, false, $context);
+									$result = wp_autoTAG_remoteApiCall($content, $url, $valuetoken);
 
 									$jsonIterator = new RecursiveIteratorIterator(
 										new RecursiveArrayIterator(json_decode($result, true)),
@@ -543,6 +529,7 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
 									);
 
 									$push = false;
+
 									foreach ($jsonIterator as $key => $val) {
 										if (is_array($val)) {
 											// Nothing to do here?
@@ -585,7 +572,7 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
 									$limite = $relevanceopt;
 									$url = $keywords;
 
-									$result2 = $this->callRemoteApi($content, $valuetoken, $url);
+									$result2 = wp_autoTAG_remoteApiCall($content, $url, $valuetoken);
 
 									$jsonIterator = new RecursiveIteratorIterator(
 										new RecursiveArrayIterator(json_decode($result2, TRUE)),
@@ -659,28 +646,6 @@ if (!class_exists('Add_Tags_Bulk_Action')) {
 
 		function perform_export($post_id) {
 			return true;
-		}
-
-		/**
-		* @param $content
-		* @param $valuetoken
-		* @param $url
-		*/
-		private function callRemoteApi($content, $valuetoken, $url) {
-			$data = array('text_list' => array($content));
-
-			$options = array(
-				'http' => array(
-					'header'  => "Content-type: application/json\r\n".
-					"Authorization:token $valuetoken\r\n",
-					'method'  => 'POST',
-					'content' => json_encode($data),
-				)
-			);
-
-			$context  = stream_context_create($options);
-
-			return file_get_contents($url, false, $context);
 		}
 	}
 }
